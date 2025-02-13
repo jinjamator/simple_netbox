@@ -26,7 +26,7 @@ with open("requirements.txt", "r") as fh:
     install_requires = fh.read().split("\n")
 
 setuptools.setup(
-    name="simple_netboxr",
+    name="simple_netbox",
     version=version,
     author="Wilhelm Putz",
     author_email="wilhelm.putz@cancom.com",
