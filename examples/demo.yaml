@@ -1,0 +1,54 @@
+dcim:
+  sites:
+    - name: A
+      description: HQ 
+      physical_address: Nowhere 1
+    - name: B
+      description: Site 
+      physical_address: Nowhere 2
+  manufacturers:
+    - name: Cisco
+    - name: Aruba
+    - name: HP
+  platforms:
+    - name: NX-OS
+      manufacturer: 
+        name: Cisco
+  device-roles:
+    - name: Router
+      vm_role: False
+    - name: Spine
+      vm_role: False
+    - name: Leaf
+      vm_role: False
+    - name: Core
+      vm_role: False
+    - name: FEX
+      vm_role: False
+
+  device-types:
+    - model: N9K-C9396PX-demo
+      part_number: N9K-C9396PX-demo
+      manufacturer: 
+        name: Cisco
+      default_platform:
+        name: NX-OS
+  interface-templates:
+    - name: Ethernet1/[1-48]
+      device_type:
+        model: N9K-C9396PX-demo
+        manufacturer: 
+          name: Cisco
+      type: 10gbase-x-sfpp
+      
+  devices:
+    - name: switch1
+      serial: FOC1234
+      device_type:
+        model: N9K-C9396PX-demo
+      site:
+        name: Obj69
+      role:
+        name: Router
+      
+      
