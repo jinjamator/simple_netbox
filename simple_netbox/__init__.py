@@ -2,12 +2,33 @@ from .rest_client.api import API
 from .rest_client.resource import Resource
 from .rest_client.request import make_request
 from .rest_client.models import Request
+from pprint import pformat
 from types import MethodType
 import base64
 import os
 import logging
 import time
 import re
+
+
+# NetBox 4.6 introduced v2 API tokens, which authenticate with
+#   Authorization: Bearer nbt_<key>.<token>
+# instead of v1's
+#   Authorization: Token <token>
+# The prefix is NetBox's users.constants.TOKEN_PREFIX; kept here as a constant so
+# a future change upstream is a one-line edit.
+TOKEN_PREFIX_V2 = "nbt_"
+
+
+def build_auth_header(token, key=None):
+    """Return the Authorization header value for a NetBox API token.
+
+    ``key`` is the v2 token's public key half. Supplying it selects v2; leaving it
+    out keeps the v1 form, so existing callers are unaffected.
+    """
+    if key:
+        return f"Bearer {TOKEN_PREFIX_V2}{key}.{token}"
+    return f"Token {token}"
 
 
 class NetboxResource(Resource):
@@ -51,10 +72,15 @@ class NetboxClient(object):
         self._log = logging.getLogger()
         self._base_url = url
 
-        if self._base_url[:-1] != "/":
-            self._base_url + "/"
+        # A base url without a trailing slash used to produce ".../netboxapi/":
+        # the old test sliced the wrong end of the string and threw its own result
+        # away, so the separator was never appended.
+        if not self._base_url.endswith("/"):
+            self._base_url += "/"
         self._base_url = self._base_url + "api/"
         self._token = kwargs.get("token", None)
+        # v2 tokens only; see build_auth_header.
+        self._key = kwargs.get("key", None)
 
         self.api = API(
             api_root_url=self._base_url,  # base api url
@@ -62,7 +88,7 @@ class NetboxClient(object):
             headers={
                 "Accept": "application/json;",
                 "User-Agent": "simple_netbox",
-                "authorization": f"Token {self._token}",
+                "authorization": build_auth_header(self._token, self._key),
             },  # default headers
             timeout=10,  # default timeout in seconds
             append_slash=True,  # append slash to final url
@@ -76,8 +102,17 @@ class NetboxClient(object):
     def __str__(self):
         return pformat(self.api.get_resource_list())
 
-    def login(self, token):
+    def login(self, token, key=None):
+        """Replace the credential on an existing client.
+
+        The header is rewritten in place because resources share this very dict,
+        so already-created ones pick the new credential up too. (The key used to
+        be misspelled "authorizationn", which meant this method silently never
+        authenticated anything.)
+        """
         if token:
             self._token = token
-        self.api.headers["authorizationn"] = f"Token {self._token}"
+        if key:
+            self._key = key
+        self.api.headers["authorization"] = build_auth_header(self._token, self._key)
         return True

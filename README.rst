@@ -84,6 +84,33 @@ CRUD a site
     print(nb.api.curl_commands)
 
 
+API tokens
+-----------------
+
+NetBox 4.6 introduced *v2* API tokens, which are made of a public ``key`` and a
+secret ``token`` and authenticate with a different header. Pass the ``key`` and
+the client uses the v2 form; leave it out and the v1 form is used, so existing
+code keeps working unchanged.
+
+.. code-block:: python
+
+    # v1 token  ->  Authorization: Token <token>
+    nb = NetboxClient(URL, token=token)
+
+    # v2 token  ->  Authorization: Bearer nbt_<key>.<token>
+    nb = NetboxClient(URL, token=token, key=key)
+
+    # the credential can also be replaced on an existing client
+    nb.login(token, key)
+
+Endpoints containing a hyphen cannot be reached by attribute access. Register
+them by path first:
+
+.. code-block:: python
+
+    nb.api.add_resource(resource_name="dcim/device-types")
+    device_types = getattr(nb.api.dcim, "device-types").get()
+
 Contribute
 ----------
 
