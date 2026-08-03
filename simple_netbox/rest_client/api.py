@@ -63,7 +63,13 @@ class API:
                 json_encode_body=json_encode_body or self.json_encode_body,
                 ssl_verify=self.ssl_verify,
                 curl_commands=self.curl_commands,
-                log_curl=self._log_curl**self._kwargs,
+                # A missing comma used to make this `self._log_curl ** self._kwargs`
+                # — an exponentiation of a bool by a dict — so add_resource() raised
+                # TypeError for every caller. It is the only way to reach an
+                # endpoint whose path contains a hyphen (dcim/device-types), which
+                # attribute access cannot express.
+                log_curl=self._log_curl,
+                **self._kwargs,
             )
             if not getattr(parent, objname, None):
                 setattr(parent, objname, resource)
