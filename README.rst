@@ -107,15 +107,23 @@ code keeps working unchanged.
     # the credential can also be replaced on an existing client
     nb.login(token, key)
 
-Endpoints containing a hyphen cannot be reached by attribute access. Register
-them by path first:
+A hyphen cannot appear in attribute syntax, so an endpoint like
+``dcim/device-types`` is reached by *calling* the parent instead — resources and
+the api object both accept a segment name, and the result chains like any other:
 
 .. code-block:: python
 
-    nb.api.add_resource(resource_name="dcim/device-types")
-    device_types = getattr(nb.api.dcim, "device-types").get()
+    device_types = nb.api.dcim("device-types").get()
+    nb.api("dcim")("device-types").get()          # the same, all the way down
+    nb.api.dcim("device-types").trace             # calls chain into attributes
 
-The query layer below takes paths as strings and has no such restriction.
+``add_resource(resource_name="dcim/device-types")`` registers the same path up
+front and remains available, but nothing has to be registered before use.
+
+The query layer below takes paths as strings, so it sidesteps the question
+entirely — and, unlike attribute or call access, a segment sharing a name with a
+resource attribute (``nb.api.dcim("get")`` is the HTTP action, not an endpoint)
+still resolves to an endpoint there.
 
 Querying
 -----------------
