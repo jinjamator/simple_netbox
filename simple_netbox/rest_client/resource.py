@@ -146,7 +146,12 @@ class Resource(BaseResource):
             if "only_body" in kwargs:
                 only_body = kwargs["only_body"]
                 del kwargs["only_body"]
-            if self._auto_slug and body and body.get("name"):
+            # Per-call override: deriving a slug from the name is right for the
+            # organisational endpoints this defaults on, but wrong for the ones
+            # that have a name and no slug at all (dcim/devices), where the extra
+            # field makes NetBox reject the whole request.
+            auto_slug = kwargs.pop("auto_slug", self._auto_slug)
+            if auto_slug and body and body.get("name"):
                 body["slug"] = slugify(body["name"])
 
             request = Request(

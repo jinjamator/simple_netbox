@@ -11,9 +11,13 @@ Features
 simple_netbox has following features:
     * manage login
     * simple CRUD via ensure_exists and ensure_absent helper functions
-    * auto add slug on creation of objects if not supplied 
+    * auto add slug on creation of objects if not supplied
     * CRUD interface for all possible API URLs
     * create curl commands from all calls (for documentation purposes)
+    * a query layer that paginates for you, with typed accessors for the common
+      objects (devices, sites, tenants, interfaces, …)
+    * an optional *scope* — implicit filters applied to every query, so a client
+      pinned to one tenant cannot return another's objects
 
 Installation
 ------------
@@ -110,6 +114,54 @@ them by path first:
 
     nb.api.add_resource(resource_name="dcim/device-types")
     device_types = getattr(nb.api.dcim, "device-types").get()
+
+The query layer below takes paths as strings and has no such restriction.
+
+Querying
+-----------------
+
+``nb.api.<app>.<endpoint>`` is the raw CRUD interface: one request, one page.
+The query layer on the client itself follows NetBox's pagination and returns
+plain lists, so a query never silently stops at the first 50 objects:
+
+.. code-block:: python
+
+    nb.devices(role="access-switch", tag=["core", "edge"])   # every page
+    nb.device(name="core-sw-01")
+    nb.device(ip="10.0.0.1")        # resolved via the interface the address is on
+    nb.interfaces(device=dev)       # a device dict, an id or a name
+    nb.sites() / nb.tenants() / nb.tags() / nb.platforms() / nb.device_roles()
+    nb.racks() / nb.ip_addresses()
+
+    nb.get("ipam/vrfs", tenant="acme")   # any endpoint, still paginated
+    nb.count("dcim/devices")             # without fetching them
+    nb.status()                          # cheap connectivity + credential check
+
+    nb.set_device_field(dev, custom_fields={"os_version": "17.9.4"})
+
+Filter values are normalised: an object returned by an earlier query can be
+passed straight back in (its slug is used), and a list becomes repeated
+parameters, which NetBox ORs.
+
+Scope
+-----------------
+
+A client may be bound to implicit filters applied to every query that can
+express them:
+
+.. code-block:: python
+
+    nb = NetboxClient(URL, token=token, scope={"tenant": "acme", "status": "active"})
+
+    nb.devices()                      # only acme's active devices
+    nb.devices(tenant="other")        # an explicit filter always wins
+    nb.devices(scope=False)           # the cross-tenant escape hatch
+    nb.devices(scope={"site": "vie"}) # replace the scope for one call
+
+Scope is applied through a per-endpoint table (``ENDPOINT_SCOPE_FILTERS``)
+rather than blindly, because NetBox rejects a filter an endpoint does not know
+and because a wrongly applied one would quietly return the wrong set. An
+endpoint that is not in the table is queried unscoped.
 
 Contribute
 ----------
