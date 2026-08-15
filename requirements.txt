@@ -1,0 +1,7 @@
+# The rest_client talks HTTP through httpx (including httpx._exceptions in the
+# error decorators) and maps status codes through the "status" module, which
+# ships as python-status. Both were undeclared, so an install into an
+# environment that did not already happen to have them produced a package that
+# could not be imported at all.
+httpx>=0.23
+python-status>=1.0.1

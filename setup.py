@@ -23,7 +23,14 @@ with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 with open("requirements.txt", "r") as fh:
-    install_requires = fh.read().split("\n")
+    # Blank lines and comments are not requirements: split("\n") used to hand
+    # setuptools an empty string, which newer versions reject as a malformed
+    # requirement.
+    install_requires = [
+        line.strip()
+        for line in fh
+        if line.strip() and not line.strip().startswith("#")
+    ]
 
 setuptools.setup(
     name="simple_netbox",
